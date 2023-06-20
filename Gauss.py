@@ -26,49 +26,6 @@ def gerar_matriz():
 
     return dataframe
 
-def calcular_gauss(matriz):
-    n = len(matriz)
-    iteracao = 0
-
-    for i in range(n):
-        
-        if matriz[i][i] == 0:
-            max_index = i
-            max_value = 0
-            for k in range(i+1, n):
-                if abs(matriz[k][i]) > max_value:
-                    max_value = abs(matriz[k][i])
-                    max_index = k
-            if max_index != i:
-                matriz[[i, max_index]] = matriz[[max_index, i]]  
-
-        pivo = matriz[i][i]
-        if pivo == 0:
-            raise ValueError("A matriz não pode ser calculada, um dos pivôs tem valor 0.")
-            
-
-        for j in range(i+1, n):
-            fator = matriz[j][i] / pivo
-            matriz[j] = matriz[j] - fator * matriz[i]
-            iteracao = iteracao + 1
-
-            st.write(f"Iteração {iteracao}")
-            st.write(matriz)
-
-    x = np.zeros(n)
-    x[n-1] = matriz[n-1][n] / matriz[n-1][n-1]
-    for i in range(n-2, -1, -1):
-        soma = 0
-        for j in range(i+1, n):
-            soma += matriz[i][j] * x[j]
-        x[i] = (matriz[i][n] - soma) / matriz[i][i]
-
-    return x
-
-def calcular_gauss_seidel():
-         
-    return "Gauss-Seidel"
-
 st.write("Matriz de valores")
 
 df = gerar_matriz()
@@ -77,6 +34,45 @@ matriz_df = st.experimental_data_editor(df)
 calcular = st.button("Calcular")
 
 if selecao_metodos == '📊 Gauss':
+
+    def calcular_gauss(matriz):
+        n = len(matriz)
+        iteracao = 0
+
+        for i in range(n):
+        
+            if matriz[i][i] == 0:
+                max_index = i
+                max_value = 0
+                for k in range(i+1, n):
+                    if abs(matriz[k][i]) > max_value:
+                        max_value = abs(matriz[k][i])
+                        max_index = k
+                if max_index != i:
+                    matriz[[i, max_index]] = matriz[[max_index, i]]  
+
+            pivo = matriz[i][i]
+            if pivo == 0:
+                raise ValueError("A matriz não pode ser calculada, um dos pivôs tem valor 0.")
+            
+
+            for j in range(i+1, n):
+                fator = matriz[j][i] / pivo
+                matriz[j] = matriz[j] - fator * matriz[i]
+                iteracao = iteracao + 1
+
+                st.write(f"Iteração {iteracao}")
+                st.write(matriz)
+
+        x = np.zeros(n)
+        x[n-1] = matriz[n-1][n] / matriz[n-1][n-1]
+        for i in range(n-2, -1, -1):
+            soma = 0
+            for j in range(i+1, n):
+                soma += matriz[i][j] * x[j]
+            x[i] = (matriz[i][n] - soma) / matriz[i][i]
+
+        return x
 
     if calcular:
         matriz_valores = matriz_df.values
@@ -89,14 +85,45 @@ if selecao_metodos == '📊 Gauss':
 
 else:
 
-    st.sidebar.number_input("Esolha o valor de epsilon", max_value= 0, min_value=-10, value=-1, step=1)
+    epsilon = st.sidebar.number_input("Esolha o valor de epsilon", value=1)
 
     st.sidebar.write("Escolha os valores do chute inicial das variáveis")
     vetor_valores_iniciais = np.zeros(tamanho_matriz)
     df_vetor_valores_iniciais = pd.DataFrame(vetor_valores_iniciais)
     vetor_df = st.sidebar.experimental_data_editor(df_vetor_valores_iniciais)
 
-if calcular:
-         
-        resultados_gauss_seidel = calcular_gauss_seidel()
-        st.write(resultados_gauss_seidel)
+    def calcular_gauss_seidel(matriz):
+        n = len(matriz)
+        A = matriz[:, :-1]  # Matriz A
+        b = matriz[:, -1]  
+        x = np.copy(vetor_df)
+        iteracao = 0
+
+        
+        for i in range(n):
+            s = 0
+            for j in range(n):
+                if j != i:
+                    s += A[i][j] * x[j]
+            x[i] = (b[i] - s) / A[i][i]
+
+            st.write(f"Iteração {iteracao}")
+
+            st.write(x)
+            iteracao = iteracao + 1
+
+            if np.linalg.norm(A @ x - b) < epsilon:
+                break
+
+        return x
+
+    if calcular:
+
+        matriz_valores = matriz_df.values
+        try:
+            resultado = calcular_gauss_seidel(matriz_valores)
+            st.write("Resultados:")
+            st.write(resultado)
+        except ValueError as e:
+            st.write("Erro:", str(e))
+
